@@ -1,6 +1,17 @@
 
 using Gmsh, Statistics
 
+const lobatto2 = ([-1.0,0.0,0.0,
+                    1.0,0.0,0.0],[1.0,1.0])
+
+const lobatto3 = ([-1.0,0.0,0.0,
+                    0.0,0.0,0.0,
+                    1.0,0.0,0.0],[1/3,4/3,1/3])
+
+const trilobatto3 = ([0.0000000000000000,0.5000000000000000,0.0,
+                      0.5000000000000000,0.0000000000000000,0.0,
+                      0.5000000000000000,0.5000000000000000,0.0],
+                   0.5*[1/3,1/3,1/3])
 function import_patchtest_mix(filename1::String,filename2::String)
     elements = Dict{String,Vector{ApproxOperator.AbstractElement}}()
     gmsh.initialize()
@@ -16,9 +27,9 @@ function import_patchtest_mix(filename1::String,filename2::String)
     s = 1.5*s*ones(length(nodes))
     push!(nodes,:s₁=>s,:s₂=>s,:s₃=>s)
 
-    integrationOrder_Ω = 2
+    integration_Ω = 2
     integrationOrder_Ωᵍ = 8
-    integrationOrder_Γ = 2
+    integration_Γ = 2
 
     gmsh.open(filename2)
     entities = getPhysicalGroups()
@@ -26,13 +37,13 @@ function import_patchtest_mix(filename1::String,filename2::String)
     type = ReproducingKernel{:Linear2D,:□,:CubicSpline}
     # type = ReproducingKernel{:Quadratic2D,:□,:CubicSpline}
     sp = RegularGrid(x,y,z,n = 3,γ = 5)
-    elements["Ω"] = getElements(nodes, entities["Ω"], type, integrationOrder_Ω, sp)
-    elements["∂Ω"] = getElements(nodes, entities["Γ"], type, integrationOrder_Γ, sp, normal = true)
+    elements["Ω"] = getElements(nodes, entities["Ω"], type, integration_Ω, sp)
+    elements["∂Ω"] = getElements(nodes, entities["Γ"], type, integration_Γ, sp, normal = true)
     elements["Ωᵍ"] = getElements(nodes, entities["Ω"], type, integrationOrder_Ωᵍ, sp)
-    elements["Γ¹"] = getElements(nodes, entities["Γ¹"],type, integrationOrder_Γ, sp, normal = true)
-    elements["Γ²"] = getElements(nodes, entities["Γ²"],type, integrationOrder_Γ, sp, normal = true)
-    elements["Γ³"] = getElements(nodes, entities["Γ³"],type, integrationOrder_Γ, sp, normal = true)
-    elements["Γ⁴"] = getElements(nodes, entities["Γ⁴"], type, integrationOrder_Γ, sp, normal = true)
+    elements["Γ¹"] = getElements(nodes, entities["Γ¹"],type, integration_Γ, sp, normal = true)
+    elements["Γ²"] = getElements(nodes, entities["Γ²"],type, integration_Γ, sp, normal = true)
+    elements["Γ³"] = getElements(nodes, entities["Γ³"],type, integration_Γ, sp, normal = true)
+    elements["Γ⁴"] = getElements(nodes, entities["Γ⁴"], type, integration_Γ, sp, normal = true)
     elements["Γ"] = elements["Γ¹"]∪elements["Γ²"]∪elements["Γ³"]∪elements["Γ⁴"]
 
     nₘ = 6
@@ -60,8 +71,8 @@ function import_patchtest_mix(filename1::String,filename2::String)
     set𝝭!(elements["Γ"])
 
     type = PiecewisePolynomial{:Linear2D}
-    elements["Ωˢ"] = getPiecewiseElements(entities["Ω"], type, integrationOrder_Ω)
-    elements["∂Ωˢ"] = getPiecewiseBoundaryElements(entities["Γ"], entities["Ω"], type, integrationOrder_Γ)
+    elements["Ωˢ"] = getPiecewiseElements(entities["Ω"], type, integration_Ω)
+    elements["∂Ωˢ"] = getPiecewiseBoundaryElements(entities["Γ"], entities["Ω"], type, integration_Γ)
     elements["Γ¹ˢ"] = getElements(entities["Γ¹"],entities["Γ"], elements["∂Ωˢ"])
     elements["Γ²ˢ"] = getElements(entities["Γ²"],entities["Γ"], elements["∂Ωˢ"])
     elements["Γ³ˢ"] = getElements(entities["Γ³"],entities["Γ"], elements["∂Ωˢ"])
