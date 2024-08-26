@@ -1,106 +1,96 @@
 
-using Tensors, BenchmarkExample
-import Gmsh: gmsh
+using Gmsh, Statistics
 
 function import_patchtest_mix(filename1::String,filename2::String)
     elements = Dict{String,Vector{ApproxOperator.AbstractElement}}()
-    integrationOrder_Ω = 2
-    integrationOrder_Γ = 2
-    integrationOrder_Ωᵍ = 10
-
     gmsh.initialize()
-
-    gmsh.open(filename2)
-    entities = getPhysicalGroups()
-    nodes_p = get𝑿ᵢ()
-    xᵖ = nodes_p.x
-    yᵖ = nodes_p.y
-    zᵖ = nodes_p.z
-    Ω = getElements(nodes_p, entities["Ω"])
-    # s, var𝐴 = cal_area_support(Ω)
-    # s = 1.5*s*ones(length(nodes_p))
-    s = 2.5*ones(length(nodes_p))
-    push!(nodes_p,:s₁=>s,:s₂=>s,:s₃=>s)
 
     gmsh.open(filename1)
     entities = getPhysicalGroups()
     nodes = get𝑿ᵢ()
+    x = nodes.x
+    y = nodes.y
+    z = nodes.z
+    Ω = getElements(nodes, entities["Ω"])
+    s, var𝐴 = cal_area_support(Ω)
+    s = 1.5*s*ones(length(nodes))
+    push!(nodes,:s₁=>s,:s₂=>s,:s₃=>s)
 
-    elements["Ω"] = getElements(nodes, entities["Ω"], integrationOrder_Ω)
-    elements["Γ¹"] = getElements(nodes, entities["Γ¹"], integrationOrder_Γ, normal = true)
-    elements["Γ²"] = getElements(nodes, entities["Γ²"], integrationOrder_Γ, normal = true)
-    elements["Γ³"] = getElements(nodes, entities["Γ³"], integrationOrder_Γ, normal = true)
-    elements["Γ⁴"] = getElements(nodes, entities["Γ⁴"], integrationOrder_Γ, normal = true)
-    elements["Γ"] = elements["Γ¹"]∪elements["Γ²"]∪elements["Γ³"]∪elements["Γ⁴"]
-    push!(elements["Ω"], :𝝭=>:𝑠, :∂𝝭∂x=>:𝑠, :∂𝝭∂y=>:𝑠)
-    push!(elements["Γ¹"], :𝝭=>:𝑠)
-    push!(elements["Γ²"], :𝝭=>:𝑠)
-    push!(elements["Γ³"], :𝝭=>:𝑠)
-    push!(elements["Γ⁴"], :𝝭=>:𝑠)
+    integrationOrder_Ω = 2
+    integrationOrder_Ωᵍ = 8
+    integrationOrder_Γ = 2
 
-    # type = PiecewisePolynomial{:Constant2D}
-    type = PiecewisePolynomial{:Linear2D}
-    elements["Ωˢ"] = getPiecewiseElements(entities["Ω"], type, integrationOrder_Ω)
-    elements["∂Ωˢ"] = getPiecewiseBoundaryElements(entities["Γ"], entities["Ω"], type, integrationOrder_Γ)
-    elements["Γ¹ˢ"] = getElements(entities["Γ¹"], entities["Γ"], elements["∂Ωˢ"])
-    elements["Γ²ˢ"] = getElements(entities["Γ²"], entities["Γ"], elements["∂Ωˢ"])
-    elements["Γ³ˢ"] = getElements(entities["Γ³"], entities["Γ"], elements["∂Ωˢ"])
-    elements["Γ⁴ˢ"] = getElements(entities["Γ⁴"], entities["Γ"], elements["∂Ωˢ"])
-    elements["Γˢ"] = elements["Γ¹ˢ"]∪elements["Γ²ˢ"]∪elements["Γ³ˢ"]∪elements["Γ⁴ˢ"]
-    push!(elements["Ωˢ"], :𝝭=>:𝑠, :∂𝝭∂x=>:𝑠, :∂𝝭∂y=>:𝑠)
-    push!(elements["∂Ωˢ"], :𝝭=>:𝑠)
+    gmsh.open(filename2)
+    entities = getPhysicalGroups()
 
     type = ReproducingKernel{:Linear2D,:□,:CubicSpline}
     # type = ReproducingKernel{:Quadratic2D,:□,:CubicSpline}
-    sp = RegularGrid(xᵖ,yᵖ,zᵖ,n = 3,γ = 5)
-    elements["Ωᵖ"] = getElements(nodes_p, entities["Ω"], type, integrationOrder_Ω, sp)
-    elements["∂Ωᵖ"] = getElements(nodes_p, entities["Γ"], type, integrationOrder_Γ, sp, normal = true)
-    elements["Γ¹ᵖ"] = getElements(nodes_p, entities["Γ¹"], type, integrationOrder_Γ, sp, normal = true)
-    elements["Γ²ᵖ"] = getElements(nodes_p, entities["Γ²"], type, integrationOrder_Γ, sp, normal = true)
-    elements["Γ³ᵖ"] = getElements(nodes_p, entities["Γ³"], type, integrationOrder_Γ, sp, normal = true)
-    elements["Γ⁴ᵖ"] = getElements(nodes_p, entities["Γ⁴"], type, integrationOrder_Γ, sp, normal = true)
-    elements["Γᵖ"] = elements["Γ¹ᵖ"]∪elements["Γ²ᵖ"]∪elements["Γ³ᵖ"]∪elements["Γ⁴ᵖ"]
+    sp = RegularGrid(x,y,z,n = 3,γ = 5)
+    elements["Ω"] = getElements(nodes, entities["Ω"], type, integrationOrder_Ω, sp)
+    elements["∂Ω"] = getElements(nodes, entities["Γ"], type, integrationOrder_Γ, sp, normal = true)
+    elements["Ωᵍ"] = getElements(nodes, entities["Ω"], type, integrationOrder_Ωᵍ, sp)
+    elements["Γ¹"] = getElements(nodes, entities["Γ¹"],type, integrationOrder_Γ, sp, normal = true)
+    elements["Γ²"] = getElements(nodes, entities["Γ²"],type, integrationOrder_Γ, sp, normal = true)
+    elements["Γ³"] = getElements(nodes, entities["Γ³"],type, integrationOrder_Γ, sp, normal = true)
+    elements["Γ⁴"] = getElements(nodes, entities["Γ⁴"], type, integrationOrder_Γ, sp, normal = true)
+    elements["Γ"] = elements["Γ¹"]∪elements["Γ²"]∪elements["Γ³"]∪elements["Γ⁴"]
 
     nₘ = 6
-    # nₘ = 21
-    𝗠 = (0,zeros(nₘ))
-    push!(elements["Ωᵖ"], :𝝭=>:𝑠)
-    push!(elements["Ωᵖ"], :𝗠=>𝗠)
-    push!(elements["∂Ωᵖ"], :𝝭=>:𝑠)
-    push!(elements["∂Ωᵖ"], :𝗠=>𝗠)
-    push!(elements["Γ¹ᵖ"], :𝝭=>:𝑠)
-    push!(elements["Γ¹ᵖ"], :𝗠=>𝗠)
-    push!(elements["Γ²ᵖ"], :𝝭=>:𝑠)
-    push!(elements["Γ²ᵖ"], :𝗠=>𝗠)
-    push!(elements["Γ³ᵖ"], :𝝭=>:𝑠)
-    push!(elements["Γ³ᵖ"], :𝗠=>𝗠)
-    push!(elements["Γ⁴ᵖ"], :𝝭=>:𝑠)
-    push!(elements["Γ⁴ᵖ"], :𝗠=>𝗠)
+    𝗠 = zeros(nₘ)
+    ∂𝗠∂x = zeros(nₘ)
+    ∂𝗠∂y = zeros(nₘ)
+    push!(elements["Ω"], :𝝭)
+    push!(elements["∂Ω"], :𝝭)
+    push!(elements["Γ¹"], :𝝭)
+    push!(elements["Γ²"], :𝝭)
+    push!(elements["Γ³"], :𝝭)
+    push!(elements["Γ⁴"], :𝝭)
+    push!(elements["Ω"],  :𝗠=>𝗠)
+    push!(elements["∂Ω"], :𝗠=>𝗠)
+    push!(elements["Γ¹"], :𝗠=>𝗠)
+    push!(elements["Γ²"], :𝗠=>𝗠)
+    push!(elements["Γ³"], :𝗠=>𝗠)
+    push!(elements["Γ⁴"], :𝗠=>𝗠)
+    push!(elements["Ωᵍ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["Ωᵍ"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
 
+    set𝝭!(elements["Ω"])
+    set𝝭!(elements["∂Ω"])
+    set∇𝝭!(elements["Ωᵍ"])
+    set𝝭!(elements["Γ"])
 
-    elements["Ωᵍ"] = getElements(nodes, entities["Ω"], integrationOrder_Ωᵍ)
-    push!(elements["Ωᵍ"], :𝝭=>:𝑠, :∂𝝭∂x=>:𝑠, :∂𝝭∂y=>:𝑠)
+    type = PiecewisePolynomial{:Linear2D}
+    elements["Ωˢ"] = getPiecewiseElements(entities["Ω"], type, integrationOrder_Ω)
+    elements["∂Ωˢ"] = getPiecewiseBoundaryElements(entities["Γ"], entities["Ω"], type, integrationOrder_Γ)
+    elements["Γ¹ˢ"] = getElements(entities["Γ¹"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γ²ˢ"] = getElements(entities["Γ²"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γ³ˢ"] = getElements(entities["Γ³"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γ⁴ˢ"] = getElements(entities["Γ⁴"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γˢ"] = elements["Γ¹ˢ"]∪elements["Γ²ˢ"]∪elements["Γ³ˢ"]∪elements["Γ⁴ˢ"]
+    push!(elements["Ωˢ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["∂Ωˢ"], :𝝭)
 
-    return elements, nodes, nodes_p
+    set∇𝝭!(elements["Ωˢ"])
+    set𝝭!(elements["∂Ωˢ"])
+
+    gmsh.finalize()
+
+    return elements, nodes
 end
 
-prescribeForFem = quote
-    prescribe!(elements["Ω"],:b₁=>(x,y,z)->b₁(x,y))
-    prescribe!(elements["Ω"],:b₂=>(x,y,z)->b₂(x,y))
-    prescribe!(elements["Γ¹"],:t₁=>(x,y,z)->0.0)
-    prescribe!(elements["Γ²"],:t₁=>(x,y,z)->0.0)
-    prescribe!(elements["Γ³"],:t₁=>(x,y,z)->0.0)
-    prescribe!(elements["Γ⁴"],:t₁=>(x,y,z)->0.0)
-    prescribe!(elements["Γ¹"],:t₂=>(x,y,z)->0.0)
-    prescribe!(elements["Γ²"],:t₂=>(x,y,z)->0.0)
-    prescribe!(elements["Γ³"],:t₂=>(x,y,z)->0.0)
-    prescribe!(elements["Γ⁴"],:t₂=>(x,y,z)->0.0)
-    prescribe!(elements["Γ¹ˢ"],:g₁=>(x,y,z)->u(x,y))
-    prescribe!(elements["Γ²ˢ"],:g₁=>(x,y,z)->u(x,y))
-    prescribe!(elements["Γ³ˢ"],:g₁=>(x,y,z)->u(x,y))
-    prescribe!(elements["Γ⁴ˢ"],:g₁=>(x,y,z)->u(x,y))
-    prescribe!(elements["Γ¹ˢ"],:g₂=>(x,y,z)->v(x,y))
-    prescribe!(elements["Γ²ˢ"],:g₂=>(x,y,z)->v(x,y))
-    prescribe!(elements["Γ³ˢ"],:g₂=>(x,y,z)->v(x,y))
-    prescribe!(elements["Γ⁴ˢ"],:g₂=>(x,y,z)->v(x,y))
+function cal_area_support(elms::Vector{ApproxOperator.AbstractElement})
+    𝐴s = zeros(length(elms))
+    for (i,elm) in enumerate(elms)
+        x₁ = elm.𝓒[1].x
+        y₁ = elm.𝓒[1].y
+        x₂ = elm.𝓒[2].x
+        y₂ = elm.𝓒[2].y
+        x₃ = elm.𝓒[3].x
+        y₃ = elm.𝓒[3].y
+        𝐴s[i] = 0.5*(x₁*y₂ + x₂*y₃ + x₃*y₁ - x₂*y₁ - x₃*y₂ - x₁*y₃)
+    end
+    avg𝐴 = mean(𝐴s)
+    var𝐴 = var(𝐴s)
+    s = (4/3^0.5*avg𝐴)^0.5
+    return s, var𝐴
 end

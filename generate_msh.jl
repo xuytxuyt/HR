@@ -1,4 +1,4 @@
 
 import BenchmarkExample: BenchmarkExample
-n = 2
-BenchmarkExample.PatchTest.generateMsh("./msh/PatchTest_"*string(n-1)*".msh", transfinite = n)
+n = 8
+BenchmarkExample.PatchTest.generateMsh("./msh/patchtest_"*string(n)*".msh", transfinite = n+1)
