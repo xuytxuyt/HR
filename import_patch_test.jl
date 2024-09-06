@@ -24,7 +24,7 @@ function import_patchtest_mix(filename1::String,filename2::String)
     z = nodes.z
     Ω = getElements(nodes, entities["Ω"])
     s, var𝐴 = cal_area_support(Ω)
-    s = 1.5*s*ones(length(nodes))
+    s = 2.5*s*ones(length(nodes))
     push!(nodes,:s₁=>s,:s₂=>s,:s₃=>s)
 
     integration_Ω = 2
@@ -34,8 +34,9 @@ function import_patchtest_mix(filename1::String,filename2::String)
     gmsh.open(filename2)
     entities = getPhysicalGroups()
 
-    type = ReproducingKernel{:Linear2D,:□,:CubicSpline}
-    # type = ReproducingKernel{:Quadratic2D,:□,:CubicSpline}
+    # type = ReproducingKernel{:Linear2D,:□,:CubicSpline}
+    type = ReproducingKernel{:Quadratic2D,:□,:CubicSpline}
+    # type = ReproducingKernel{:Cubic2D,:□,:CubicSpline}
     sp = RegularGrid(x,y,z,n = 3,γ = 5)
     elements["Ω"] = getElements(nodes, entities["Ω"], type, integration_Ω, sp)
     elements["∂Ω"] = getElements(nodes, entities["Γ"], type, integration_Γ, sp, normal = true)
@@ -46,7 +47,7 @@ function import_patchtest_mix(filename1::String,filename2::String)
     elements["Γ⁴"] = getElements(nodes, entities["Γ⁴"], type, integration_Γ, sp, normal = true)
     elements["Γ"] = elements["Γ¹"]∪elements["Γ²"]∪elements["Γ³"]∪elements["Γ⁴"]
 
-    nₘ = 6
+    nₘ = 21
     𝗠 = zeros(nₘ)
     ∂𝗠∂x = zeros(nₘ)
     ∂𝗠∂y = zeros(nₘ)
@@ -71,6 +72,7 @@ function import_patchtest_mix(filename1::String,filename2::String)
     set𝝭!(elements["Γ"])
 
     type = PiecewisePolynomial{:Linear2D}
+    # type = PiecewisePolynomial{:Quadratic2D}
     elements["Ωˢ"] = getPiecewiseElements(entities["Ω"], type, integration_Ω)
     elements["∂Ωˢ"] = getPiecewiseBoundaryElements(entities["Γ"], entities["Ω"], type, integration_Γ)
     elements["Γ¹ˢ"] = getElements(entities["Γ¹"],entities["Γ"], elements["∂Ωˢ"])
@@ -84,7 +86,7 @@ function import_patchtest_mix(filename1::String,filename2::String)
     set∇𝝭!(elements["Ωˢ"])
     set𝝭!(elements["∂Ωˢ"])
 
-    gmsh.finalize()
+    # gmsh.finalize()
 
     return elements, nodes
 end

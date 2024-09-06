@@ -5,9 +5,10 @@ using ApproxOperator.Elasticity: ∫∫σᵢⱼσₖₗdxdy, ∫∫∇σᵢⱼu�
 include("import_patch_test.jl")
 
 # nₚ = 49
+ndivs = 8
 ndiv = 8
 # elements, nodes = import_patchtest_mix("msh/patchtest_u_"*string(nₚ)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
-elements, nodes = import_patchtest_mix("msh/patchtest_"*string(ndiv)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
+elements, nodes = import_patchtest_mix("msh/patchtest_"*string(ndivs)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
 
 nₛ = 3
 nₚ = length(nodes)
@@ -19,7 +20,7 @@ E = 1.0
 Ē = E/(1.0-ν^2)
 ν̄ = ν/(1.0-ν)
 
-n = 2
+n = 1
 u(x,y) = (1+2*x+3*y)^n
 v(x,y) = (4+5*x+6*y)^n
 ∂u∂x(x,y) = 2*n*(1+2*x+3*y)^abs(n-1)
