@@ -12,7 +12,8 @@ const trilobatto3 = ([0.0000000000000000,0.5000000000000000,0.0,
                       0.5000000000000000,0.0000000000000000,0.0,
                       0.5000000000000000,0.5000000000000000,0.0],
                    0.5*[1/3,1/3,1/3])
-function import_patchtest_mix(filename1::String,filename2::String)
+
+function import_plate_with_hole_mix(filename1::String,filename2::String)
     elements = Dict{String,Vector{ApproxOperator.AbstractElement}}()
     gmsh.initialize()
 
@@ -41,11 +42,12 @@ function import_patchtest_mix(filename1::String,filename2::String)
     elements["Ω"] = getElements(nodes, entities["Ω"], type, integration_Ω, sp)
     elements["∂Ω"] = getElements(nodes, entities["Γ"], type, integration_Γ, sp, normal = true)
     elements["Ωᵍ"] = getElements(nodes, entities["Ω"], type, integrationOrder_Ωᵍ, sp)
-    elements["Γ¹"] = getElements(nodes, entities["Γ¹"],type, integration_Γ, sp, normal = true)
-    elements["Γ²"] = getElements(nodes, entities["Γ²"],type, integration_Γ, sp, normal = true)
-    elements["Γ³"] = getElements(nodes, entities["Γ³"],type, integration_Γ, sp, normal = true)
-    elements["Γ⁴"] = getElements(nodes, entities["Γ⁴"], type, integration_Γ, sp, normal = true)
-    elements["Γ"] = elements["Γ¹"]∪elements["Γ²"]∪elements["Γ³"]∪elements["Γ⁴"]
+    elements["Γᵍ₁"] = getElements(nodes, entities["Γᵍ₁"],type, integration_Γ, sp, normal = true)
+    elements["Γᵍ₂"] = getElements(nodes, entities["Γᵍ₂"],type, integration_Γ, sp, normal = true)
+    elements["Γᵗ₁"] = getElements(nodes, entities["Γᵗ₁"],type, integration_Γ, sp, normal = true)
+    elements["Γᵗ₂"] = getElements(nodes, entities["Γᵗ₂"],type, integration_Γ, sp, normal = true)
+    elements["Γᵗ₃"] = getElements(nodes, entities["Γᵗ₃"],type, integration_Γ, sp, normal = true)
+    elements["Γ"] = elements["Γᵍ₁"]∪elements["Γᵍ₂"]∪elements["Γᵗ₁"]∪elements["Γᵗ₂"]∪elements["Γᵗ₃"]
 
     nₘ = 21
     𝗠 = zeros(nₘ)
@@ -53,16 +55,18 @@ function import_patchtest_mix(filename1::String,filename2::String)
     ∂𝗠∂y = zeros(nₘ)
     push!(elements["Ω"], :𝝭)
     push!(elements["∂Ω"], :𝝭)
-    push!(elements["Γ¹"], :𝝭)
-    push!(elements["Γ²"], :𝝭)
-    push!(elements["Γ³"], :𝝭)
-    push!(elements["Γ⁴"], :𝝭)
+    push!(elements["Γᵍ₁"], :𝝭)
+    push!(elements["Γᵍ₂"], :𝝭)
+    push!(elements["Γᵗ₁"], :𝝭)
+    push!(elements["Γᵗ₂"], :𝝭)
+    push!(elements["Γᵗ₃"], :𝝭)
     push!(elements["Ω"],  :𝗠=>𝗠)
     push!(elements["∂Ω"], :𝗠=>𝗠)
-    push!(elements["Γ¹"], :𝗠=>𝗠)
-    push!(elements["Γ²"], :𝗠=>𝗠)
-    push!(elements["Γ³"], :𝗠=>𝗠)
-    push!(elements["Γ⁴"], :𝗠=>𝗠)
+    push!(elements["Γᵍ₁"], :𝗠=>𝗠)
+    push!(elements["Γᵍ₂"], :𝗠=>𝗠)
+    push!(elements["Γᵗ₁"], :𝗠=>𝗠)
+    push!(elements["Γᵗ₂"], :𝗠=>𝗠)
+    push!(elements["Γᵗ₃"], :𝗠=>𝗠)
     push!(elements["Ωᵍ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
     push!(elements["Ωᵍ"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
 
@@ -70,13 +74,15 @@ function import_patchtest_mix(filename1::String,filename2::String)
 
     type = PiecewisePolynomial{:Linear2D}
     # type = PiecewisePolynomial{:Quadratic2D}
+    println(entities)
     elements["Ωˢ"] = getPiecewiseElements(entities["Ω"], type, integration_Ω)
     elements["∂Ωˢ"] = getPiecewiseBoundaryElements(entities["Γ"], entities["Ω"], type, integration_Γ)
-    elements["Γ¹ˢ"] = getElements(entities["Γ¹"],entities["Γ"], elements["∂Ωˢ"])
-    elements["Γ²ˢ"] = getElements(entities["Γ²"],entities["Γ"], elements["∂Ωˢ"])
-    elements["Γ³ˢ"] = getElements(entities["Γ³"],entities["Γ"], elements["∂Ωˢ"])
-    elements["Γ⁴ˢ"] = getElements(entities["Γ⁴"],entities["Γ"], elements["∂Ωˢ"])
-    elements["Γˢ"] = elements["Γ¹ˢ"]∪elements["Γ²ˢ"]∪elements["Γ³ˢ"]∪elements["Γ⁴ˢ"]
+    elements["Γᵍ₁ˢ"] = getElements(entities["Γᵍ₁"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γᵍ₂ˢ"] = getElements(entities["Γᵍ₂"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γᵗ₁ˢ"] = getElements(entities["Γᵗ₁"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γᵗ₂ˢ"] = getElements(entities["Γᵗ₂"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γᵗ₃ˢ"] = getElements(entities["Γᵗ₃"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γˢ"] = elements["Γᵍ₁ˢ"]∪elements["Γᵍ₂ˢ"]∪elements["Γᵗ₁ˢ"]∪elements["Γᵗ₂ˢ"]∪elements["Γᵗ₃ˢ"]
     push!(elements["Ωˢ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
     push!(elements["∂Ωˢ"], :𝝭)
 

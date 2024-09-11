@@ -2,7 +2,7 @@
 using ApproxOperator
 using ApproxOperator.Elasticity: ∫∫σᵢⱼσₖₗdxdy, ∫∫∇σᵢⱼuᵢdxdy, ∫σᵢⱼnⱼuᵢds, ∫σᵢⱼnⱼgᵢds, ∫∫vᵢbᵢdxdy, ∫vᵢtᵢds, L₂, Hₑ_PlaneStress
 
-include("import_patch_test.jl")
+include("import_plate_with_hole.jl")
 
 ndivs = 2
 ndiv = 2
