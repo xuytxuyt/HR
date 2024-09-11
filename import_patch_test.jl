@@ -66,10 +66,7 @@ function import_patchtest_mix(filename1::String,filename2::String)
     push!(elements["Ωᵍ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
     push!(elements["Ωᵍ"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
 
-    set𝝭!(elements["Ω"])
-    set𝝭!(elements["∂Ω"])
-    set∇𝝭!(elements["Ωᵍ"])
-    set𝝭!(elements["Γ"])
+
 
     type = PiecewisePolynomial{:Linear2D}
     # type = PiecewisePolynomial{:Quadratic2D}
@@ -83,14 +80,87 @@ function import_patchtest_mix(filename1::String,filename2::String)
     push!(elements["Ωˢ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
     push!(elements["∂Ωˢ"], :𝝭)
 
-    set∇𝝭!(elements["Ωˢ"])
-    set𝝭!(elements["∂Ωˢ"])
-
     # gmsh.finalize()
 
     return elements, nodes
 end
 
+function import_plate_with_hole_mix(filename1::String,filename2::String)
+    elements = Dict{String,Vector{ApproxOperator.AbstractElement}}()
+    gmsh.initialize()
+
+    gmsh.open(filename1)
+    entities = getPhysicalGroups()
+    nodes = get𝑿ᵢ()
+    x = nodes.x
+    y = nodes.y
+    z = nodes.z
+    Ω = getElements(nodes, entities["Ω"])
+    s, var𝐴 = cal_area_support(Ω)
+    s = 2.5*s*ones(length(nodes))
+    push!(nodes,:s₁=>s,:s₂=>s,:s₃=>s)
+
+    integration_Ω = 2
+    integrationOrder_Ωᵍ = 8
+    integration_Γ = 2
+
+    gmsh.open(filename2)
+    entities = getPhysicalGroups()
+
+    # type = ReproducingKernel{:Linear2D,:□,:CubicSpline}
+    type = ReproducingKernel{:Quadratic2D,:□,:CubicSpline}
+    # type = ReproducingKernel{:Cubic2D,:□,:CubicSpline}
+    sp = RegularGrid(x,y,z,n = 3,γ = 5)
+    elements["Ω"] = getElements(nodes, entities["Ω"], type, integration_Ω, sp)
+    elements["∂Ω"] = getElements(nodes, entities["Γ"], type, integration_Γ, sp, normal = true)
+    elements["Ωᵍ"] = getElements(nodes, entities["Ω"], type, integrationOrder_Ωᵍ, sp)
+    elements["Γᵍ₁"] = getElements(nodes, entities["Γᵍ₁"],type, integration_Γ, sp, normal = true)
+    elements["Γᵍ₂"] = getElements(nodes, entities["Γᵍ₂"],type, integration_Γ, sp, normal = true)
+    elements["Γᵗ₁"] = getElements(nodes, entities["Γᵗ₁"],type, integration_Γ, sp, normal = true)
+    elements["Γᵗ₂"] = getElements(nodes, entities["Γᵗ₂"],type, integration_Γ, sp, normal = true)
+    elements["Γᵗ₃"] = getElements(nodes, entities["Γᵗ₃"],type, integration_Γ, sp, normal = true)
+    elements["Γ"] = elements["Γᵍ₁"]∪elements["Γᵍ₂"]∪elements["Γᵗ₁"]∪elements["Γᵗ₂"]∪elements["Γᵗ₃"]
+
+    nₘ = 21
+    𝗠 = zeros(nₘ)
+    ∂𝗠∂x = zeros(nₘ)
+    ∂𝗠∂y = zeros(nₘ)
+    push!(elements["Ω"], :𝝭)
+    push!(elements["∂Ω"], :𝝭)
+    push!(elements["Γᵍ₁"], :𝝭)
+    push!(elements["Γᵍ₂"], :𝝭)
+    push!(elements["Γᵗ₁"], :𝝭)
+    push!(elements["Γᵗ₂"], :𝝭)
+    push!(elements["Γᵗ₃"], :𝝭)
+    push!(elements["Ω"],  :𝗠=>𝗠)
+    push!(elements["∂Ω"], :𝗠=>𝗠)
+    push!(elements["Γᵍ₁"], :𝗠=>𝗠)
+    push!(elements["Γᵍ₂"], :𝗠=>𝗠)
+    push!(elements["Γᵗ₁"], :𝗠=>𝗠)
+    push!(elements["Γᵗ₂"], :𝗠=>𝗠)
+    push!(elements["Γᵗ₃"], :𝗠=>𝗠)
+    push!(elements["Ωᵍ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["Ωᵍ"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
+
+
+
+    type = PiecewisePolynomial{:Linear2D}
+    # type = PiecewisePolynomial{:Quadratic2D}
+    elements["Ωˢ"] = getPiecewiseElements(entities["Ω"], type, integration_Ω)
+    elements["∂Ωˢ"] = getPiecewiseBoundaryElements(entities["Γ"], entities["Ω"], type, integration_Γ)
+    elements["Γᵍ₁ˢ"] = getElements(entities["Γᵍ₁"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γᵍ₂ˢ"] = getElements(entities["Γᵍ₂"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γᵗ₁ˢ"] = getElements(entities["Γᵗ₁"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γᵗ₂ˢ"] = getElements(entities["Γᵗ₂"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γᵗ₃ˢ"] = getElements(entities["Γᵗ₃"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γˢ"] = elements["Γᵍ₁ˢ"]∪elements["Γᵍ₂ˢ"]∪elements["Γᵗ₁ˢ"]∪elements["Γᵗ₂ˢ"]∪elements["Γᵗ₃ˢ"]
+    push!(elements["Ωˢ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["∂Ωˢ"], :𝝭)
+
+    # gmsh.finalize()
+
+    return elements, nodes
+end
 function cal_area_support(elms::Vector{ApproxOperator.AbstractElement})
     𝐴s = zeros(length(elms))
     for (i,elm) in enumerate(elms)

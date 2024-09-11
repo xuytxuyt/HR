@@ -1,21 +1,28 @@
 
-using ApproxOperator, XLSX, TimerOutputs
+using ApproxOperator, XLSX, TimerOutputs, SparseArrays, Pardiso
 using ApproxOperator.Heat: ∫∫qᵢpᵢdxdy, ∫pᵢnᵢuds, ∫∫∇𝒑udxdy, ∫pᵢnᵢgⱼds, ∫vbdΩ, ∫vgdΓ, L₂, L₂𝒑, H₁
 
 include("import_patch_test.jl")
 
 # nₚ = 49
-ndivu = 64
-ndiv = 64
+ndivu = 8
+ndiv = 8
 # elements, nodes = import_patchtest_mix("msh/patchtest_u_"*string(nₚ)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
 elements, nodes = import_patchtest_mix("msh/patchtest_"*string(ndiv)*".msh","./msh/patchtest_"*string(ndivu)*".msh");
-
+# ps = MKLPardisoSolver()
 const to = TimerOutput()
 
 nₛ = 3
 nₚ = length(nodes)
 nₑ = length(elements["Ω"])
-
+@timeit to "shape function" begin
+    set𝝭!(elements["Ω"])
+    set𝝭!(elements["∂Ω"])
+    set∇𝝭!(elements["Ωᵍ"])
+    set𝝭!(elements["Γ"])
+    set∇𝝭!(elements["Ωˢ"])
+    set𝝭!(elements["∂Ωˢ"])
+end
 n = 5
 # u(x,y) = (x+y)^n
 # ∂u∂x(x,y) = n*(x+y)^abs(n-1)
@@ -55,16 +62,19 @@ kᵖᵖ = zeros(2*nₛ*nₑ,2*nₛ*nₑ)
 fᵖ = zeros(2*nₛ*nₑ)
 kᵖᵘ = zeros(2*nₛ*nₑ,nₚ)
 fᵘ = zeros(nₚ)
-
 𝑎(kᵖᵖ)
 𝑏(kᵖᵘ)
 𝑏ᵅ(kᵖᵘ,fᵖ)
 𝑓(fᵘ)
 end
-@timeit to "solve" begin
 
+
+# k = sparse([kᵖᵖ kᵖᵘ;kᵖᵘ' zeros(nₚ,nₚ)])
+# set_matrixtype!(ps,-2)
+# k = get_matrix(ps,k,:N)
 d = [kᵖᵖ kᵖᵘ;kᵖᵘ' zeros(nₚ,nₚ)]\[fᵖ;-fᵘ]
-end
+# f = [fᵖ;-fᵘ]
+# @timeit to "solve" pardiso(ps,d,k,f)
 
 𝑢 = d[2*nₛ*nₑ+1:end]
 push!(nodes,:d=>𝑢)
