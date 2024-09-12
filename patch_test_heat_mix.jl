@@ -5,8 +5,8 @@ using ApproxOperator.Heat: ∫∫qᵢpᵢdxdy, ∫pᵢnᵢuds, ∫∫∇𝒑udxd
 include("import_patch_test.jl")
 
 # nₚ = 49
-ndivu = 8
-ndiv = 8
+ndivu = 16
+ndiv = 16
 # elements, nodes = import_patchtest_mix("msh/patchtest_u_"*string(nₚ)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
 elements, nodes = import_patchtest_mix("msh/patchtest_"*string(ndiv)*".msh","./msh/patchtest_"*string(ndivu)*".msh");
 # ps = MKLPardisoSolver()
@@ -23,7 +23,7 @@ nₑ = length(elements["Ω"])
     set∇𝝭!(elements["Ωˢ"])
     set𝝭!(elements["∂Ωˢ"])
 end
-n = 5
+n = 1
 # u(x,y) = (x+y)^n
 # ∂u∂x(x,y) = n*(x+y)^abs(n-1)
 # ∂u∂y(x,y) = n*(x+y)^abs(n-1)

@@ -4,8 +4,8 @@ using ApproxOperator.Elasticity: ∫∫σᵢⱼσₖₗdxdy, ∫∫∇σᵢⱼu�
 
 include("import_plate_with_hole.jl")
 
-ndivs = 2
-ndiv = 2
+ndivs = 4
+ndiv = 4
 # elements, nodes = import_patchtest_mix("msh/patchtest_u_"*string(nₚ)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
 elements, nodes = import_plate_with_hole_mix("msh/PlateWithHole_"*string(ndivs)*".msh","./msh/PlateWithHole_"*string(ndiv)*".msh");
 

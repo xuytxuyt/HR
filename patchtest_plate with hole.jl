@@ -2,28 +2,30 @@
 using ApproxOperator
 using ApproxOperator.Elasticity: ∫∫σᵢⱼσₖₗdxdy, ∫∫∇σᵢⱼuᵢdxdy, ∫σᵢⱼnⱼuᵢds, ∫σᵢⱼnⱼgᵢds, ∫∫vᵢbᵢdxdy, ∫vᵢtᵢds, L₂, Hₑ_PlaneStress
 
-include("import_patch_test.jl")
+include("import_plate_with_hole.jl")
 
-# nₚ = 49
 ndivs = 2
 ndiv = 2
 # elements, nodes = import_patchtest_mix("msh/patchtest_u_"*string(nₚ)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
-elements, nodes = import_patchtest_mix("msh/patchtest_"*string(ndivs)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
+elements, nodes = import_plate_with_hole_mix("msh/PlateWithHole_"*string(ndivs)*".msh","./msh/PlateWithHole_"*string(ndiv)*".msh");
 
 nₛ = 3
 nₚ = length(nodes)
 nₑ = length(elements["Ω"])
 
-E = 1.0
+E = 3e6
 ν = 0.3
 # ν̄ = 0.499999
 Ē = E/(1.0-ν^2)
 ν̄ = ν/(1.0-ν)
-
+T = 1000
+a = 1
 set𝝭!(elements["Ω"])
 set𝝭!(elements["∂Ω"])
 set∇𝝭!(elements["Ωᵍ"])
 set𝝭!(elements["Γ"])
+set𝝭!(elements["Γᵍ"])
+set𝝭!(elements["Γᵗ"])
 set∇𝝭!(elements["Ωˢ"])
 set𝝭!(elements["∂Ωˢ"])
 
@@ -63,32 +65,22 @@ v(x,y) = (4+5*x+6*y)^n
 b₁(x,y) = -∂σ₁₁∂x(x,y) - ∂σ₁₂∂y(x,y)
 b₂(x,y) = -∂σ₁₂∂x(x,y) - ∂σ₂₂∂y(x,y)
 
-prescribe!(elements["Ωˢ"],:E=>(x,y,z)->E, index=:𝑔)
-prescribe!(elements["Ωˢ"],:ν=>(x,y,z)->ν, index=:𝑔)
-prescribe!(elements["Ωᵍ"],:E=>(x,y,z)->E, index=:𝑔)
-prescribe!(elements["Ωᵍ"],:ν=>(x,y,z)->ν, index=:𝑔)
+prescribe!(elements["Ωˢ"],:E=>(x,y,z)->E)
+prescribe!(elements["Ωˢ"],:ν=>(x,y,z)->ν)
+prescribe!(elements["Ωᵍ"],:E=>(x,y,z)->E)
+prescribe!(elements["Ωᵍ"],:ν=>(x,y,z)->ν)
 prescribe!(elements["Ω"],:b₁=>(x,y,z)->b₁(x,y))
 prescribe!(elements["Ω"],:b₂=>(x,y,z)->b₂(x,y))
-prescribe!(elements["Γ¹"],:g₁=>(x,y,z)->u(x,y))
-prescribe!(elements["Γ¹"],:g₂=>(x,y,z)->v(x,y))
-prescribe!(elements["Γ²"],:g₁=>(x,y,z)->u(x,y))
-prescribe!(elements["Γ²"],:g₂=>(x,y,z)->v(x,y))
-prescribe!(elements["Γ³"],:g₁=>(x,y,z)->u(x,y))
-prescribe!(elements["Γ³"],:g₂=>(x,y,z)->v(x,y))
-prescribe!(elements["Γ⁴"],:g₁=>(x,y,z)->u(x,y))
-prescribe!(elements["Γ⁴"],:g₂=>(x,y,z)->v(x,y))
-# prescribe!(elements["Γ¹"],:n₁₁=>(x,y,z)->1.0)
-# prescribe!(elements["Γ¹"],:n₂₂=>(x,y,z)->1.0)
-# prescribe!(elements["Γ¹"],:n₁₂=>(x,y,z)->0.0)
-# prescribe!(elements["Γ²"],:n₁₁=>(x,y,z)->1.0)
-# prescribe!(elements["Γ²"],:n₂₂=>(x,y,z)->1.0)
-# prescribe!(elements["Γ²"],:n₁₂=>(x,y,z)->0.0)
-# prescribe!(elements["Γ³"],:n₁₁=>(x,y,z)->1.0)
-# prescribe!(elements["Γ³"],:n₂₂=>(x,y,z)->1.0)
-# prescribe!(elements["Γ³"],:n₁₂=>(x,y,z)->0.0)
-# prescribe!(elements["Γ⁴"],:n₁₁=>(x,y,z)->1.0)
-# prescribe!(elements["Γ⁴"],:n₂₂=>(x,y,z)->1.0)
-# prescribe!(elements["Γ⁴"],:n₁₂=>(x,y,z)->0.0)
+prescribe!(elements["Γᵗ"],:t₁=>(x,y,z)->σ₁₁(x,y))
+prescribe!(elements["Γᵗ"],:t₂=>(x,y,z)->σ₁₂(x,y))
+prescribe!(elements["Γᵍ"],:g₁=>(x,y,z)->u(x,y))
+prescribe!(elements["Γᵍ"],:g₂=>(x,y,z)->v(x,y))
+# prescribe!(elements["Γᵍ₁"],:n₁₁=>(x,y,z)->1.0)
+# prescribe!(elements["Γᵍ₁"],:n₂₂=>(x,y,z)->0.0)
+# prescribe!(elements["Γᵍ₁"],:n₁₂=>(x,y,z)->0.0)
+# prescribe!(elements["Γᵍ₂"],:n₁₁=>(x,y,z)->0.0)
+# prescribe!(elements["Γᵍ₂"],:n₂₂=>(x,y,z)->1.0)
+# prescribe!(elements["Γᵍ₂"],:n₁₂=>(x,y,z)->0.0)
 prescribe!(elements["Ωᵍ"],:u=>(x,y,z)->u(x,y))
 prescribe!(elements["Ωᵍ"],:v=>(x,y,z)->v(x,y))
 prescribe!(elements["Ωᵍ"],:∂u∂x=>(x,y,z)->∂u∂x(x,y))
@@ -102,7 +94,10 @@ prescribe!(elements["Ωᵍ"],:∂v∂y=>(x,y,z)->∂v∂y(x,y))
     ∫∫∇σᵢⱼuᵢdxdy=>(elements["Ωˢ"],elements["Ω"]),
 ]
 𝑏ᵅ = ∫σᵢⱼnⱼgᵢds=>(elements["Γˢ"],elements["Γ"])
-𝑓 = ∫∫vᵢbᵢdxdy=>elements["Ω"]
+𝑓 = [
+    ∫∫vᵢbᵢdxdy=>elements["Ω"],
+    ∫vᵢtᵢds=>elements["Γᵗ"],
+]
 
 kᵖᵖ = zeros(3*nₛ*nₑ,3*nₛ*nₑ)
 fᵖ = zeros(3*nₛ*nₑ)
