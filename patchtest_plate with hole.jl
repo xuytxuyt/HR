@@ -13,13 +13,11 @@ nₛ = 3
 nₚ = length(nodes)
 nₑ = length(elements["Ω"])
 
-E = 3e6
+E = 1.0
 ν = 0.3
-# ν̄ = 0.499999
-Ē = E/(1.0-ν^2)
-ν̄ = ν/(1.0-ν)
-T = 1000
-a = 1
+T = 1000.0
+a = 1.0
+
 set𝝭!(elements["Ω"])
 set𝝭!(elements["∂Ω"])
 set∇𝝭!(elements["Ωᵍ"])
@@ -71,16 +69,10 @@ prescribe!(elements["Ωᵍ"],:E=>(x,y,z)->E)
 prescribe!(elements["Ωᵍ"],:ν=>(x,y,z)->ν)
 prescribe!(elements["Ω"],:b₁=>(x,y,z)->b₁(x,y))
 prescribe!(elements["Ω"],:b₂=>(x,y,z)->b₂(x,y))
-prescribe!(elements["Γᵗ"],:t₁=>(x,y,z)->σ₁₁(x,y))
-prescribe!(elements["Γᵗ"],:t₂=>(x,y,z)->σ₁₂(x,y))
+prescribe!(elements["Γᵗ"],:t₁=>(x,y,z,n₁,n₂)->σ₁₁(x,y)*n₁+σ₁₂(x,y)*n₂)
+prescribe!(elements["Γᵗ"],:t₂=>(x,y,z,n₁,n₂)->σ₁₂(x,y)*n₁+σ₂₂(x,y)*n₂)
 prescribe!(elements["Γᵍ"],:g₁=>(x,y,z)->u(x,y))
 prescribe!(elements["Γᵍ"],:g₂=>(x,y,z)->v(x,y))
-# prescribe!(elements["Γᵍ₁"],:n₁₁=>(x,y,z)->1.0)
-# prescribe!(elements["Γᵍ₁"],:n₂₂=>(x,y,z)->0.0)
-# prescribe!(elements["Γᵍ₁"],:n₁₂=>(x,y,z)->0.0)
-# prescribe!(elements["Γᵍ₂"],:n₁₁=>(x,y,z)->0.0)
-# prescribe!(elements["Γᵍ₂"],:n₂₂=>(x,y,z)->1.0)
-# prescribe!(elements["Γᵍ₂"],:n₁₂=>(x,y,z)->0.0)
 prescribe!(elements["Ωᵍ"],:u=>(x,y,z)->u(x,y))
 prescribe!(elements["Ωᵍ"],:v=>(x,y,z)->v(x,y))
 prescribe!(elements["Ωᵍ"],:∂u∂x=>(x,y,z)->∂u∂x(x,y))
@@ -95,7 +87,7 @@ prescribe!(elements["Ωᵍ"],:∂v∂y=>(x,y,z)->∂v∂y(x,y))
 ]
 𝑏ᵅ = ∫σᵢⱼnⱼgᵢds=>(elements["Γˢ"],elements["Γ"])
 𝑓 = [
-    ∫∫vᵢbᵢdxdy=>elements["Ω"],
+    # ∫∫vᵢbᵢdxdy=>elements["Ω"],
     ∫vᵢtᵢds=>elements["Γᵗ"],
 ]
 
