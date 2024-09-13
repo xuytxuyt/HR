@@ -44,7 +44,7 @@ function import_plate_with_hole_mix(filename1::String,filename2::String)
     elements["Ωᵍ"] = getElements(nodes, entities["Ω"], type, integrationOrder_Ωᵍ, sp)
     elements["Γᵍ"] = getElements(nodes, entities["Γᵍ"],type, integration_Γ, sp, normal = true)
     elements["Γᵗ"] = getElements(nodes, entities["Γᵗ"],type, integration_Γ, sp, normal = true)
-    elements["Γ"] = elements["Γᵍ"]
+    elements["Γ"] = elements["Γᵍ"]∪elements["Γᵗ"]
 
     nₘ = 21
     𝗠 = zeros(nₘ)
@@ -70,7 +70,7 @@ function import_plate_with_hole_mix(filename1::String,filename2::String)
     elements["∂Ωˢ"] = getPiecewiseBoundaryElements(entities["Γ"], entities["Ω"], type, integration_Γ)
     elements["Γᵍˢ"] = getElements(entities["Γᵍ"],entities["Γ"], elements["∂Ωˢ"])
     elements["Γᵗˢ"] = getElements(entities["Γᵗ"],entities["Γ"], elements["∂Ωˢ"])
-    elements["Γˢ"] = elements["Γᵍˢ"]
+    elements["Γˢ"] = elements["Γᵍˢ"]∪elements["Γᵗˢ"]
     push!(elements["Ωˢ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
     push!(elements["∂Ωˢ"], :𝝭)
 
