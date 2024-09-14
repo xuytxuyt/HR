@@ -1,25 +1,31 @@
 
-using ApproxOperator
+using ApproxOperator, XLSX, TimerOutputs, SparseArrays, Pardiso
 using ApproxOperator.Elasticity: ∫∫σᵢⱼσₖₗdxdy, ∫∫∇σᵢⱼuᵢdxdy, ∫σᵢⱼnⱼuᵢds, ∫σᵢⱼnⱼgᵢds, ∫∫vᵢbᵢdxdy, ∫vᵢtᵢds, L₂, Hₑ_PlaneStress
 
 include("import_plate_with_hole.jl")
 
-ndivs = 2
-ndiv = 2
+ndivs = 16
+ndiv = 16
 # elements, nodes = import_patchtest_mix("msh/patchtest_u_"*string(nₚ)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
 elements, nodes = import_plate_with_hole_mix("msh/PlateWithHole_"*string(ndivs)*".msh","./msh/PlateWithHole_"*string(ndiv)*".msh");
+const to = TimerOutput()
 
 nₛ = 3
 nₚ = length(nodes)
 nₑ = length(elements["Ω"])
+@timeit to "shape function" begin
+
 set𝝭!(elements["Ω"])
 set𝝭!(elements["∂Ω"])
 set∇𝝭!(elements["Ωᵍ"])
 set𝝭!(elements["Γ"])
-set𝝭!(elements["Γᵍ"])
+set𝝭!(elements["Γᵍ₁"])
+set𝝭!(elements["Γᵍ₂"])
 set𝝭!(elements["Γᵗ"])
 set∇𝝭!(elements["Ωˢ"])
 set𝝭!(elements["∂Ωˢ"])
+end
+
 E = 1000.0
 ν = 0.3
 # ν̄ = 0.499999
@@ -46,14 +52,16 @@ prescribe!(elements["Ωᵍ"],:ν=>(x,y,z)->ν)
 # prescribe!(elements["Ω"],:b₂=>(x,y,z)->b₂(x,y))
 prescribe!(elements["Γᵗ"],:t₁=>(x,y,z,n₁,n₂)->σ₁₁(x,y)*n₁+σ₁₂(x,y)*n₂)
 prescribe!(elements["Γᵗ"],:t₂=>(x,y,z,n₁,n₂)->σ₁₂(x,y)*n₁+σ₂₂(x,y)*n₂)
-prescribe!(elements["Γᵍ"],:g₁=>(x,y,z)->u(x,y))
-prescribe!(elements["Γᵍ"],:g₂=>(x,y,z)->v(x,y))
-# prescribe!(elements["Γᵍ₁"],:n₁₁=>(x,y,z)->1.0)
-# prescribe!(elements["Γᵍ₁"],:n₂₂=>(x,y,z)->1.0)
-# prescribe!(elements["Γᵍ₁"],:n₁₂=>(x,y,z)->0.0)
-# prescribe!(elements["Γᵍ₂"],:n₁₁=>(x,y,z)->1.0)
-# prescribe!(elements["Γᵍ₂"],:n₂₂=>(x,y,z)->1.0)
-# prescribe!(elements["Γᵍ₂"],:n₁₂=>(x,y,z)->0.0)
+prescribe!(elements["Γᵍ₁"],:g₁=>(x,y,z)->u(x,y))
+prescribe!(elements["Γᵍ₁"],:g₂=>(x,y,z)->v(x,y))
+prescribe!(elements["Γᵍ₂"],:g₁=>(x,y,z)->u(x,y))
+prescribe!(elements["Γᵍ₂"],:g₂=>(x,y,z)->v(x,y))
+prescribe!(elements["Γᵍ₁"],:n₁₁=>(x,y,z)->0.0)
+prescribe!(elements["Γᵍ₁"],:n₂₂=>(x,y,z)->1.0)
+prescribe!(elements["Γᵍ₁"],:n₁₂=>(x,y,z)->0.0)
+prescribe!(elements["Γᵍ₂"],:n₁₁=>(x,y,z)->1.0)
+prescribe!(elements["Γᵍ₂"],:n₂₂=>(x,y,z)->0.0)
+prescribe!(elements["Γᵍ₂"],:n₁₂=>(x,y,z)->0.0)
 prescribe!(elements["Ωᵍ"],:u=>(x,y,z)->u(x,y))
 prescribe!(elements["Ωᵍ"],:v=>(x,y,z)->v(x,y))
 prescribe!(elements["Ωᵍ"],:∂u∂x=>(x,y,z)->∂u∂x(x,y))
@@ -71,6 +79,7 @@ prescribe!(elements["Ωᵍ"],:∂v∂y=>(x,y,z)->∂v∂y(x,y))
     # ∫∫vᵢbᵢdxdy=>elements["Ω"],
     ∫vᵢtᵢds=>elements["Γᵗ"],
 ]
+@timeit to "assembly matrix" begin
 
 kᵖᵖ = zeros(3*nₛ*nₑ,3*nₛ*nₑ)
 fᵖ = zeros(3*nₛ*nₑ)
@@ -81,6 +90,7 @@ fᵘ = zeros(2*nₚ)
 𝑏(kᵖᵘ)
 𝑏ᵅ(kᵖᵘ,fᵖ)
 𝑓(fᵘ)
+end
 
 d = [kᵖᵖ kᵖᵘ;kᵖᵘ' zeros(2*nₚ,2*nₚ)]\[fᵖ;-fᵘ]
 
@@ -90,3 +100,15 @@ push!(nodes,:d₁=>d₁,:d₂=>d₂)
 
 # 𝐿₂ = L₂(elements["Ωᵍ"])
 𝐿₂, 𝐻ₑ = Hₑ_PlaneStress(elements["Ωᵍ"])
+println(𝐿₂)
+println(𝐻ₑ)
+
+XLSX.openxlsx("./xlsx/platewithhole.xlsx", mode="rw") do xf
+index = 2:30
+    Sheet = xf[1]
+    ind = findfirst(n->n==ndiv,index)+1
+    Sheet["A"*string(ind)] = 3*nₑ
+    Sheet["B"*string(ind)] = log10(𝐿₂)
+    Sheet["C"*string(ind)] = log10(𝐻ₑ)
+end
+show(to)

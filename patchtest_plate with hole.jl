@@ -69,12 +69,12 @@ prescribe!(elements["Ωᵍ"],:E=>(x,y,z)->E)
 prescribe!(elements["Ωᵍ"],:ν=>(x,y,z)->ν)
 prescribe!(elements["Ω"],:b₁=>(x,y,z)->b₁(x,y))
 prescribe!(elements["Ω"],:b₂=>(x,y,z)->b₂(x,y))
-# prescribe!(elements["Γᵗ"],:t₁=>(x,y,z,n₁,n₂)->σ₁₁(x,y)*n₁+σ₁₂(x,y)*n₂)
-# prescribe!(elements["Γᵗ"],:t₂=>(x,y,z,n₁,n₂)->σ₁₂(x,y)*n₁+σ₂₂(x,y)*n₂)
+prescribe!(elements["Γᵗ"],:t₁=>(x,y,z,n₁,n₂)->σ₁₁(x,y)*n₁+σ₁₂(x,y)*n₂)
+prescribe!(elements["Γᵗ"],:t₂=>(x,y,z,n₁,n₂)->σ₁₂(x,y)*n₁+σ₂₂(x,y)*n₂)
 prescribe!(elements["Γᵍ"],:g₁=>(x,y,z)->u(x,y))
 prescribe!(elements["Γᵍ"],:g₂=>(x,y,z)->v(x,y))
-prescribe!(elements["Γᵗ"],:g₁=>(x,y,z)->u(x,y))
-prescribe!(elements["Γᵗ"],:g₂=>(x,y,z)->v(x,y))
+# prescribe!(elements["Γᵗ"],:g₁=>(x,y,z)->u(x,y))
+# prescribe!(elements["Γᵗ"],:g₂=>(x,y,z)->v(x,y))
 prescribe!(elements["Ωᵍ"],:u=>(x,y,z)->u(x,y))
 prescribe!(elements["Ωᵍ"],:v=>(x,y,z)->v(x,y))
 prescribe!(elements["Ωᵍ"],:∂u∂x=>(x,y,z)->∂u∂x(x,y))
@@ -90,7 +90,7 @@ prescribe!(elements["Ωᵍ"],:∂v∂y=>(x,y,z)->∂v∂y(x,y))
 𝑏ᵅ = ∫σᵢⱼnⱼgᵢds=>(elements["Γˢ"],elements["Γ"])
 𝑓 = [
     ∫∫vᵢbᵢdxdy=>elements["Ω"],
-    # ∫vᵢtᵢds=>elements["Γᵗ"],
+    ∫vᵢtᵢds=>elements["Γᵗ"],
 ]
 
 kᵖᵖ = zeros(3*nₛ*nₑ,3*nₛ*nₑ)

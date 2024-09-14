@@ -24,8 +24,8 @@ function import_plate_with_hole_mix(filename1::String,filename2::String)
     y = nodes.y
     z = nodes.z
     Ω = getElements(nodes, entities["Ω"])
-    s, var𝐴 = cal_area_support(Ω)
-    s = 2.5*s*ones(length(nodes))
+    s = cal_area_support(Ω)
+    s = 2.5*s
     push!(nodes,:s₁=>s,:s₂=>s,:s₃=>s)
 
     integration_Ω = 2
@@ -42,9 +42,10 @@ function import_plate_with_hole_mix(filename1::String,filename2::String)
     elements["Ω"] = getElements(nodes, entities["Ω"], type, integration_Ω, sp)
     elements["∂Ω"] = getElements(nodes, entities["Γ"], type, integration_Γ, sp, normal = true)
     elements["Ωᵍ"] = getElements(nodes, entities["Ω"], type, integrationOrder_Ωᵍ, sp)
-    elements["Γᵍ"] = getElements(nodes, entities["Γᵍ"],type, integration_Γ, sp, normal = true)
+    elements["Γᵍ₁"] = getElements(nodes, entities["Γᵍ₁"],type, integration_Γ, sp, normal = true)
+    elements["Γᵍ₂"] = getElements(nodes, entities["Γᵍ₂"],type, integration_Γ, sp, normal = true)
     elements["Γᵗ"] = getElements(nodes, entities["Γᵗ"],type, integration_Γ, sp, normal = true)
-    elements["Γ"] = elements["Γᵍ"]∪elements["Γᵗ"]
+    elements["Γ"] = elements["Γᵍ₁"]∪elements["Γᵍ₂"]
 
     nₘ = 21
     𝗠 = zeros(nₘ)
@@ -52,11 +53,13 @@ function import_plate_with_hole_mix(filename1::String,filename2::String)
     ∂𝗠∂y = zeros(nₘ)
     push!(elements["Ω"], :𝝭)
     push!(elements["∂Ω"], :𝝭)
-    push!(elements["Γᵍ"], :𝝭)
+    push!(elements["Γᵍ₁"], :𝝭)
+    push!(elements["Γᵍ₂"], :𝝭)
     push!(elements["Γᵗ"], :𝝭)
     push!(elements["Ω"],  :𝗠=>𝗠)
     push!(elements["∂Ω"], :𝗠=>𝗠)
-    push!(elements["Γᵍ"], :𝗠=>𝗠)
+    push!(elements["Γᵍ₁"], :𝗠=>𝗠)
+    push!(elements["Γᵍ₂"], :𝗠=>𝗠)
     push!(elements["Γᵗ"], :𝗠=>𝗠)
     push!(elements["Ωᵍ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
     push!(elements["Ωᵍ"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
@@ -68,9 +71,10 @@ function import_plate_with_hole_mix(filename1::String,filename2::String)
     println(entities)
     elements["Ωˢ"] = getPiecewiseElements(entities["Ω"], type, integration_Ω)
     elements["∂Ωˢ"] = getPiecewiseBoundaryElements(entities["Γ"], entities["Ω"], type, integration_Γ)
-    elements["Γᵍˢ"] = getElements(entities["Γᵍ"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γᵍˢ₁"] = getElements(entities["Γᵍ₁"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γᵍˢ₂"] = getElements(entities["Γᵍ₂"],entities["Γ"], elements["∂Ωˢ"])
     elements["Γᵗˢ"] = getElements(entities["Γᵗ"],entities["Γ"], elements["∂Ωˢ"])
-    elements["Γˢ"] = elements["Γᵍˢ"]∪elements["Γᵗˢ"]
+    elements["Γˢ"] = elements["Γᵍˢ₁"]∪elements["Γᵍˢ₂"]
     push!(elements["Ωˢ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
     push!(elements["∂Ωˢ"], :𝝭)
 
@@ -81,6 +85,7 @@ end
 
 function cal_area_support(elms::Vector{ApproxOperator.AbstractElement})
     𝐴s = zeros(length(elms))
+    s  = zeros(length(elms))
     for (i,elm) in enumerate(elms)
         x₁ = elm.𝓒[1].x
         y₁ = elm.𝓒[1].y
@@ -89,9 +94,7 @@ function cal_area_support(elms::Vector{ApproxOperator.AbstractElement})
         x₃ = elm.𝓒[3].x
         y₃ = elm.𝓒[3].y
         𝐴s[i] = 0.5*(x₁*y₂ + x₂*y₃ + x₃*y₁ - x₂*y₁ - x₃*y₂ - x₁*y₃)
+        s[i]  = (4/3^0.5*𝐴s[i])^0.5
     end
-    avg𝐴 = mean(𝐴s)
-    var𝐴 = var(𝐴s)
-    s = (4/3^0.5*avg𝐴)^0.5
-    return s, var𝐴
+    return s
 end
