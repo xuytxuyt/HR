@@ -5,10 +5,10 @@ using ApproxOperator.Elasticity: ∫∫σᵢⱼσₖₗdxdy, ∫∫∇σᵢⱼu�
 
 include("import_plate_with_hole.jl")
 
-ndivs = 8
-ndiv = 8
+ndivs = 16
+ndiv = 18
 # elements, nodes = import_patchtest_mix("msh/patchtest_u_"*string(nₚ)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
-elements, nodes = import_plate_with_hole_mix("msh/PlateWithHole_"*string(ndivs)*".msh","./msh/PlateWithHole_"*string(ndiv)*".msh",2*ndiv,0.9);
+elements, nodes = import_plate_with_hole_mix("msh/PlateWithHole_"*string(ndivs)*".msh","./msh/PlateWithHole_"*string(ndiv)*".msh",2*ndiv,0.965);
 const to = TimerOutput()
 
 nₛ = 3
@@ -19,9 +19,7 @@ nₑ = length(elements["Ω"])
 set𝝭!(elements["Ω"])
 set𝝭!(elements["∂Ω"])
 set∇𝝭!(elements["Ωᵍ"])
-set𝝭!(elements["Γ"])
-set𝝭!(elements["Γᵍ₁"])
-set𝝭!(elements["Γᵍ₂"])
+set𝝭!(elements["Γᵍ"])
 set𝝭!(elements["Γᵗ"])
 set∇𝝭!(elements["Ωˢ"])
 set𝝭!(elements["∂Ωˢ"])
@@ -53,16 +51,11 @@ prescribe!(elements["Ωᵍ"],:ν=>(x,y,z)->ν)
 # prescribe!(elements["Ω"],:b₂=>(x,y,z)->b₂(x,y))
 prescribe!(elements["Γᵗ"],:t₁=>(x,y,z,n₁,n₂)->σ₁₁(x,y)*n₁+σ₁₂(x,y)*n₂)
 prescribe!(elements["Γᵗ"],:t₂=>(x,y,z,n₁,n₂)->σ₁₂(x,y)*n₁+σ₂₂(x,y)*n₂)
-prescribe!(elements["Γᵍ₁"],:g₁=>(x,y,z)->u(x,y))
-prescribe!(elements["Γᵍ₁"],:g₂=>(x,y,z)->v(x,y))
-prescribe!(elements["Γᵍ₂"],:g₁=>(x,y,z)->u(x,y))
-prescribe!(elements["Γᵍ₂"],:g₂=>(x,y,z)->v(x,y))
-prescribe!(elements["Γᵍ₁"],:n₁₁=>(x,y,z)->0.0)
-prescribe!(elements["Γᵍ₁"],:n₂₂=>(x,y,z)->1.0)
-prescribe!(elements["Γᵍ₁"],:n₁₂=>(x,y,z)->0.0)
-prescribe!(elements["Γᵍ₂"],:n₁₁=>(x,y,z)->1.0)
-prescribe!(elements["Γᵍ₂"],:n₂₂=>(x,y,z)->0.0)
-prescribe!(elements["Γᵍ₂"],:n₁₂=>(x,y,z)->0.0)
+prescribe!(elements["Γᵍ"],:g₁=>(x,y,z)->u(x,y))
+prescribe!(elements["Γᵍ"],:g₂=>(x,y,z)->v(x,y))
+prescribe!(elements["Γᵍ"],:n₁₁=>(x,y,z,n₁,n₂)->(1-abs(n₂))*abs(n₁))
+prescribe!(elements["Γᵍ"],:n₂₂=>(x,y,z,n₁,n₂)->(1-abs(n₁))*abs(n₂))
+prescribe!(elements["Γᵍ"],:n₁₂=>(x,y,z)->0.0)
 prescribe!(elements["Ωᵍ"],:u=>(x,y,z)->u(x,y))
 prescribe!(elements["Ωᵍ"],:v=>(x,y,z)->v(x,y))
 prescribe!(elements["Ωᵍ"],:∂u∂x=>(x,y,z)->∂u∂x(x,y))
@@ -75,7 +68,7 @@ prescribe!(elements["Ωᵍ"],:∂v∂y=>(x,y,z)->∂v∂y(x,y))
     ∫σᵢⱼnⱼuᵢds=>(elements["∂Ωˢ"],elements["∂Ω"]),
     ∫∫∇σᵢⱼuᵢdxdy=>(elements["Ωˢ"],elements["Ω"]),
 ]
-𝑏ᵅ = ∫σᵢⱼnⱼgᵢds=>(elements["Γˢ"],elements["Γ"])
+𝑏ᵅ = ∫σᵢⱼnⱼgᵢds=>(elements["Γᵍˢ"],elements["Γᵍ"])
 𝑓 = [
     # ∫∫vᵢbᵢdxdy=>elements["Ω"],
     ∫vᵢtᵢds=>elements["Γᵗ"],

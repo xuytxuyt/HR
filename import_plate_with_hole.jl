@@ -29,8 +29,6 @@ function import_plate_with_hole_mix(filename1::String,filename2::String,n,c)
     end
     ds₂ = 4*2^0.5/w
     ds₁ = ds₂*c^(n-1)
-    println(ds₁)
-    println(ds₂)
     s = zeros(length(nodes))
     for (i,node) in enumerate(nodes) 
         xᵢ = node.x
