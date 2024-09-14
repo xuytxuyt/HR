@@ -1,13 +1,14 @@
 
-using ApproxOperator, XLSX, TimerOutputs, SparseArrays, Pardiso
+using ApproxOperator, XLSX, TimerOutputs 
+# using SparseArrays, Pardiso
 using ApproxOperator.Elasticity: ∫∫σᵢⱼσₖₗdxdy, ∫∫∇σᵢⱼuᵢdxdy, ∫σᵢⱼnⱼuᵢds, ∫σᵢⱼnⱼgᵢds, ∫∫vᵢbᵢdxdy, ∫vᵢtᵢds, L₂, Hₑ_PlaneStress
 
 include("import_plate_with_hole.jl")
 
-ndivs = 16
-ndiv = 16
+ndivs = 8
+ndiv = 8
 # elements, nodes = import_patchtest_mix("msh/patchtest_u_"*string(nₚ)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
-elements, nodes = import_plate_with_hole_mix("msh/PlateWithHole_"*string(ndivs)*".msh","./msh/PlateWithHole_"*string(ndiv)*".msh");
+elements, nodes = import_plate_with_hole_mix("msh/PlateWithHole_"*string(ndivs)*".msh","./msh/PlateWithHole_"*string(ndiv)*".msh",2*ndiv,0.9);
 const to = TimerOutput()
 
 nₛ = 3

@@ -1,5 +1,5 @@
 
-using Gmsh, Statistics
+using Gmsh, Statistics 
 
 const lobatto2 = ([-1.0,0.0,0.0,
                     1.0,0.0,0.0],[1.0,1.0])
@@ -13,7 +13,7 @@ const trilobatto3 = ([0.0000000000000000,0.5000000000000000,0.0,
                       0.5000000000000000,0.5000000000000000,0.0],
                    0.5*[1/3,1/3,1/3])
 
-function import_plate_with_hole_mix(filename1::String,filename2::String)
+function import_plate_with_hole_mix(filename1::String,filename2::String,n,c)
     elements = Dict{String,Vector{ApproxOperator.AbstractElement}}()
     gmsh.initialize()
 
@@ -23,9 +23,22 @@ function import_plate_with_hole_mix(filename1::String,filename2::String)
     x = nodes.x
     y = nodes.y
     z = nodes.z
-    Ω = getElements(nodes, entities["Ω"])
-    s = cal_area_support(Ω)
-    s = 2.5*s
+    w = 0.0
+    for i in 0:n-1
+        w += c^i
+    end
+    ds₂ = 4*2^0.5/w
+    ds₁ = ds₂*c^(n-1)
+    println(ds₁)
+    println(ds₂)
+    s = zeros(length(nodes))
+    for (i,node) in enumerate(nodes) 
+        xᵢ = node.x
+        yᵢ = node.y
+        r = (xᵢ^2+yᵢ^2)^0.5
+        s[i] = ds₁ + (r-1)/4/2^0.5*(ds₂-ds₁)
+    end
+    s .*= 2.5
     push!(nodes,:s₁=>s,:s₂=>s,:s₃=>s)
 
     integration_Ω = 2
@@ -42,10 +55,8 @@ function import_plate_with_hole_mix(filename1::String,filename2::String)
     elements["Ω"] = getElements(nodes, entities["Ω"], type, integration_Ω, sp)
     elements["∂Ω"] = getElements(nodes, entities["Γ"], type, integration_Γ, sp, normal = true)
     elements["Ωᵍ"] = getElements(nodes, entities["Ω"], type, integrationOrder_Ωᵍ, sp)
-    elements["Γᵍ₁"] = getElements(nodes, entities["Γᵍ₁"],type, integration_Γ, sp, normal = true)
-    elements["Γᵍ₂"] = getElements(nodes, entities["Γᵍ₂"],type, integration_Γ, sp, normal = true)
+    elements["Γᵍ"] = getElements(nodes, entities["Γᵍ"],type, integration_Γ, sp, normal = true)
     elements["Γᵗ"] = getElements(nodes, entities["Γᵗ"],type, integration_Γ, sp, normal = true)
-    elements["Γ"] = elements["Γᵍ₁"]∪elements["Γᵍ₂"]
 
     nₘ = 21
     𝗠 = zeros(nₘ)
@@ -53,13 +64,11 @@ function import_plate_with_hole_mix(filename1::String,filename2::String)
     ∂𝗠∂y = zeros(nₘ)
     push!(elements["Ω"], :𝝭)
     push!(elements["∂Ω"], :𝝭)
-    push!(elements["Γᵍ₁"], :𝝭)
-    push!(elements["Γᵍ₂"], :𝝭)
+    push!(elements["Γᵍ"], :𝝭)
     push!(elements["Γᵗ"], :𝝭)
     push!(elements["Ω"],  :𝗠=>𝗠)
     push!(elements["∂Ω"], :𝗠=>𝗠)
-    push!(elements["Γᵍ₁"], :𝗠=>𝗠)
-    push!(elements["Γᵍ₂"], :𝗠=>𝗠)
+    push!(elements["Γᵍ"], :𝗠=>𝗠)
     push!(elements["Γᵗ"], :𝗠=>𝗠)
     push!(elements["Ωᵍ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
     push!(elements["Ωᵍ"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
@@ -71,10 +80,8 @@ function import_plate_with_hole_mix(filename1::String,filename2::String)
     println(entities)
     elements["Ωˢ"] = getPiecewiseElements(entities["Ω"], type, integration_Ω)
     elements["∂Ωˢ"] = getPiecewiseBoundaryElements(entities["Γ"], entities["Ω"], type, integration_Γ)
-    elements["Γᵍˢ₁"] = getElements(entities["Γᵍ₁"],entities["Γ"], elements["∂Ωˢ"])
-    elements["Γᵍˢ₂"] = getElements(entities["Γᵍ₂"],entities["Γ"], elements["∂Ωˢ"])
+    elements["Γᵍˢ"] = getElements(entities["Γᵍ"],entities["Γ"], elements["∂Ωˢ"])
     elements["Γᵗˢ"] = getElements(entities["Γᵗ"],entities["Γ"], elements["∂Ωˢ"])
-    elements["Γˢ"] = elements["Γᵍˢ₁"]∪elements["Γᵍˢ₂"]
     push!(elements["Ωˢ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
     push!(elements["∂Ωˢ"], :𝝭)
 
