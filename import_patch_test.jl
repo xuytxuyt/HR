@@ -85,6 +85,60 @@ function import_patchtest_mix(filename1::String,filename2::String)
     return elements, nodes
 end
 
+function import_patchtest_gauss(filename::String)
+    elements = Dict{String,Vector{ApproxOperator.AbstractElement}}()
+    gmsh.initialize()
+
+    gmsh.open(filename)
+    entities = getPhysicalGroups()
+    nodes = get𝑿ᵢ()
+    x = nodes.x
+    y = nodes.y
+    z = nodes.z
+    Ω = getElements(nodes, entities["Ω"])
+    s, var𝐴 = cal_area_support(Ω)
+    s = 2.5*s*ones(length(nodes))
+    push!(nodes,:s₁=>s,:s₂=>s,:s₃=>s)
+
+    integration_Ω = 7
+    integrationOrder_Ωᵍ = 8
+    integration_Γ = 7
+
+    # type = ReproducingKernel{:Linear2D,:□,:CubicSpline}
+    type = ReproducingKernel{:Quadratic2D,:□,:CubicSpline}
+    # type = ReproducingKernel{:Cubic2D,:□,:CubicSpline}
+    sp = RegularGrid(x,y,z,n = 3,γ = 5)
+    elements["Ω"] = getElements(nodes, entities["Ω"], type, integration_Ω, sp)
+    elements["Ωᵍ"] = getElements(nodes, entities["Ω"], type, integrationOrder_Ωᵍ, sp)
+    elements["Γ¹"] = getElements(nodes, entities["Γ¹"],type, integration_Γ, sp, normal = true)
+    elements["Γ²"] = getElements(nodes, entities["Γ²"],type, integration_Γ, sp, normal = true)
+    elements["Γ³"] = getElements(nodes, entities["Γ³"],type, integration_Γ, sp, normal = true)
+    elements["Γ⁴"] = getElements(nodes, entities["Γ⁴"], type, integration_Γ, sp, normal = true)
+    elements["Γ"] = elements["Γ¹"]∪elements["Γ²"]∪elements["Γ³"]∪elements["Γ⁴"]
+
+    nₘ = 21
+    𝗠 = zeros(nₘ)
+    ∂𝗠∂x = zeros(nₘ)
+    ∂𝗠∂y = zeros(nₘ)
+    ∂𝗠∂z = zeros(nₘ)
+    push!(elements["Ω"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["Γ¹"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["Γ²"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["Γ³"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["Γ⁴"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["Ω"],  :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
+    push!(elements["Γ¹"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
+    push!(elements["Γ²"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
+    push!(elements["Γ³"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
+    push!(elements["Γ⁴"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
+    push!(elements["Ωᵍ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y, :∂𝝭∂z)
+    push!(elements["Ωᵍ"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y, :∂𝗠∂z=>∂𝗠∂z)
+
+    # gmsh.finalize()
+
+    return elements, nodes
+end
+
 function cal_area_support(elms::Vector{ApproxOperator.AbstractElement})
     𝐴s = zeros(length(elms))
     for (i,elm) in enumerate(elms)
