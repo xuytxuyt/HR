@@ -1,21 +1,21 @@
 
-using ApproxOperator, XLSX, TimerOutputs 
-# using SparseArrays, Pardiso
+using ApproxOperator, XLSX, TimerOutputs
+using SparseArrays, Pardiso
 using ApproxOperator.Elasticity: ∫∫σᵢⱼσₖₗdxdy, ∫∫∇σᵢⱼuᵢdxdy, ∫σᵢⱼnⱼuᵢds, ∫σᵢⱼnⱼgᵢds, ∫∫vᵢbᵢdxdy, ∫vᵢtᵢds, L₂, Hₑ_PlaneStress
 
 include("import_plate_with_hole.jl")
 
-ndivs = 16
-ndiv = 18
+ndivs = 4
+ndiv = 4
 # elements, nodes = import_patchtest_mix("msh/patchtest_u_"*string(nₚ)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
-elements, nodes = import_plate_with_hole_mix("msh/PlateWithHole_"*string(ndivs)*".msh","./msh/PlateWithHole_"*string(ndiv)*".msh",2*ndiv,0.965);
-const to = TimerOutput()
+elements, nodes = import_plate_with_hole_mix("msh/PlateWithHole_"*string(ndivs)*".msh","./msh/PlateWithHole_"*string(ndiv)*".msh",2*ndiv,0.8);
 
+const to = TimerOutput()
+ps = MKLPardisoSolver()
 nₛ = 3
 nₚ = length(nodes)
 nₑ = length(elements["Ω"])
-@timeit to "shape function" begin
-
+@timeit to "shape function" begin 
 set𝝭!(elements["Ω"])
 set𝝭!(elements["∂Ω"])
 set∇𝝭!(elements["Ωᵍ"])
@@ -24,13 +24,10 @@ set𝝭!(elements["Γᵗ"])
 set∇𝝭!(elements["Ωˢ"])
 set𝝭!(elements["∂Ωˢ"])
 end
-
-E = 1000.0
+T = 1000.0
+E = 3e6
 ν = 0.3
-# ν̄ = 0.499999
-Ē = E/(1.0-ν^2)
-ν̄ = ν/(1.0-ν)
-
+a = 1.0
 r(x,y) = (x^2+y^2)^0.5
 θ(x,y) = atan(y/x)
 u(x,y) = T*a*(1+ν)/2/E*( r(x,y)/a*2/(1+ν)*cos(θ(x,y)) + a/r(x,y)*(4/(1+ν)*cos(θ(x,y))+cos(3*θ(x,y))) - a^3/r(x,y)^3*cos(3*θ(x,y)) )
@@ -47,8 +44,6 @@ prescribe!(elements["Ωˢ"],:E=>(x,y,z)->E)
 prescribe!(elements["Ωˢ"],:ν=>(x,y,z)->ν)
 prescribe!(elements["Ωᵍ"],:E=>(x,y,z)->E)
 prescribe!(elements["Ωᵍ"],:ν=>(x,y,z)->ν)
-# prescribe!(elements["Ω"],:b₁=>(x,y,z)->b₁(x,y))
-# prescribe!(elements["Ω"],:b₂=>(x,y,z)->b₂(x,y))
 prescribe!(elements["Γᵗ"],:t₁=>(x,y,z,n₁,n₂)->σ₁₁(x,y)*n₁+σ₁₂(x,y)*n₂)
 prescribe!(elements["Γᵗ"],:t₂=>(x,y,z,n₁,n₂)->σ₁₂(x,y)*n₁+σ₂₂(x,y)*n₂)
 prescribe!(elements["Γᵍ"],:g₁=>(x,y,z)->u(x,y))
@@ -69,16 +64,15 @@ prescribe!(elements["Ωᵍ"],:∂v∂y=>(x,y,z)->∂v∂y(x,y))
     ∫∫∇σᵢⱼuᵢdxdy=>(elements["Ωˢ"],elements["Ω"]),
 ]
 𝑏ᵅ = ∫σᵢⱼnⱼgᵢds=>(elements["Γᵍˢ"],elements["Γᵍ"])
-𝑓 = [
-    # ∫∫vᵢbᵢdxdy=>elements["Ω"],
-    ∫vᵢtᵢds=>elements["Γᵗ"],
-]
+𝑓 =  ∫vᵢtᵢds=>elements["Γᵗ"]
+
 @timeit to "assembly matrix" begin
 
-kᵖᵖ = zeros(3*nₛ*nₑ,3*nₛ*nₑ)
+kᵖᵖ = spzeros(3*nₛ*nₑ,3*nₛ*nₑ)
 fᵖ = zeros(3*nₛ*nₑ)
-kᵖᵘ = zeros(3*nₛ*nₑ,2*nₚ)
+kᵖᵘ = spzeros(3*nₛ*nₑ,2*nₚ)
 fᵘ = zeros(2*nₚ)
+# d = zeros(3*nₛ*nₑ+2*nₚ)
 
 𝑎(kᵖᵖ)
 𝑏(kᵖᵘ)
@@ -86,23 +80,27 @@ fᵘ = zeros(2*nₚ)
 𝑓(fᵘ)
 end
 
+# k = sparse([kᵖᵖ kᵖᵘ;kᵖᵘ' zeros(2*nₚ,2*nₚ)])
+# set_matrixtype!(ps,-2)
+# k = get_matrix(ps,k,:N)
+# f = [fᵖ;-fᵘ]
+# @timeit to "solve" pardiso(ps,d,k,f)
 d = [kᵖᵖ kᵖᵘ;kᵖᵘ' zeros(2*nₚ,2*nₚ)]\[fᵖ;-fᵘ]
-
 d₁ = d[3*nₛ*nₑ+1:2:end]
 d₂ = d[3*nₛ*nₑ+2:2:end]
 push!(nodes,:d₁=>d₁,:d₂=>d₂)
 
 # 𝐿₂ = L₂(elements["Ωᵍ"])
-𝐿₂, 𝐻ₑ = Hₑ_PlaneStress(elements["Ωᵍ"])
+𝐻ₑ, 𝐿₂ = Hₑ_PlaneStress(elements["Ωᵍ"])
 println(𝐿₂)
 println(𝐻ₑ)
 
-XLSX.openxlsx("./xlsx/platewithhole.xlsx", mode="rw") do xf
-index = 2:30
-    Sheet = xf[1]
-    ind = findfirst(n->n==ndiv,index)+1
-    Sheet["A"*string(ind)] = 3*nₑ
-    Sheet["B"*string(ind)] = log10(𝐿₂)
-    Sheet["C"*string(ind)] = log10(𝐻ₑ)
-end
+# XLSX.openxlsx("./xlsx/platewithhole.xlsx", mode="rw") do xf
+# index = 3,4,5,6,7,8,10,289,81,1089,32,16,4225,19,628,2272,78,12,1081,4255,25,23
+#     Sheet = xf[3]
+#     ind = findfirst(n->n==ndiv,index)+1
+#     Sheet["A"*string(ind)] = nₑ
+#     Sheet["B"*string(ind)] = log10(𝐿₂)
+#     Sheet["C"*string(ind)] = log10(𝐻ₑ)
+# end
 show(to)

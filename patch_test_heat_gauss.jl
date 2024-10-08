@@ -5,7 +5,7 @@ using ApproxOperator.Heat: ∫∫∇v∇udxdy, ∫∇𝑛vgds, ∫vbdΩ, L₂, H
 
 include("import_patch_test.jl")
 
-ndiv = 16
+ndiv = 64
 elements, nodes = import_patchtest_gauss("msh/patchtest_"*string(ndiv)*".msh");
 # ps = MKLPardisoSolver()
 const to = TimerOutput()
@@ -17,7 +17,7 @@ nₑ = length(elements["Ω"])
     set∇𝝭!(elements["Ωᵍ"])
     set∇𝝭!(elements["Γ"])
 end
-n = 1
+n = 5
 # u(x,y) = (x+y)^n
 # ∂u∂x(x,y) = n*(x+y)^abs(n-1)
 # ∂u∂y(x,y) = n*(x+y)^abs(n-1)
@@ -81,13 +81,13 @@ push!(nodes,:d=>d)
 
 println(𝐿₂)
 println(𝐻ₑ)
-# XLSX.openxlsx("./xlsx/patchtest.xlsx", mode="rw") do xf
-# index = 64
-#     Sheet = xf[1]
-#     ind = findfirst(n->n==ndivu,index)+1
-#     Sheet["O"*string(ind)] = 3*nₑ
-#     Sheet["P"*string(ind)] = log10(𝐿₂)
-#     Sheet["Q"*string(ind)] = log10(𝐻ₑ)
+# XLSX.openxlsx("./xlsx/heat.xlsx", mode="rw") do xf
+# index = 8,16,32,64
+#     Sheet = xf[3]
+#     ind = findfirst(n->n==ndiv,index)+1
+#     Sheet["A"*string(ind)] = 3*nₑ
+#     Sheet["B"*string(ind)] = log10(𝐿₂)
+#     Sheet["C"*string(ind)] = log10(𝐻ₑ)
 # end
 
 show(to)

@@ -88,6 +88,64 @@ function import_plate_with_hole_mix(filename1::String,filename2::String,n,c)
     return elements, nodes
 end
 
+function import_plate_with_hole_gauss(filename::String,n,c)
+    elements = Dict{String,Vector{ApproxOperator.AbstractElement}}()
+    gmsh.initialize()
+
+    gmsh.open(filename)
+    entities = getPhysicalGroups()
+    nodes = get𝑿ᵢ()
+    x = nodes.x
+    y = nodes.y
+    z = nodes.z 
+    w = 0.0
+    for i in 0:n-1
+        w += c^i
+    end
+    ds₂ = 4*2^0.5/w
+    ds₁ = ds₂*c^(n-1)
+    s = zeros(length(nodes))
+    for (i,node) in enumerate(nodes) 
+        xᵢ = node.x
+        yᵢ = node.y
+        r = (xᵢ^2+yᵢ^2)^0.5
+        s[i] = ds₁ + (r-1)/4/2^0.5*(ds₂-ds₁)
+    end
+    s .*= 2.5
+    push!(nodes,:s₁=>s,:s₂=>s,:s₃=>s)
+
+    integration_Ω = 7
+    integrationOrder_Ωᵍ = 8
+    integration_Γ = 7
+
+    # type = ReproducingKernel{:Linear2D,:□,:CubicSpline}
+    type = ReproducingKernel{:Quadratic2D,:□,:CubicSpline}
+    # type = ReproducingKernel{:Cubic2D,:□,:CubicSpline}
+    sp = RegularGrid(x,y,z,n = 3,γ = 5)
+    elements["Ω"] = getElements(nodes, entities["Ω"], type, integration_Ω, sp)
+    elements["Ωᵍ"] = getElements(nodes, entities["Ω"], type, integrationOrder_Ωᵍ, sp)
+    elements["Γᵍ"] = getElements(nodes, entities["Γᵍ"],type, integration_Γ, sp, normal = true)
+    elements["Γᵗ"] = getElements(nodes, entities["Γᵗ"],type, integration_Γ, sp, normal = true)
+
+    nₘ = 21
+    𝗠 = zeros(nₘ)
+    ∂𝗠∂x = zeros(nₘ)
+    ∂𝗠∂y = zeros(nₘ)
+    ∂𝗠∂z = zeros(nₘ)
+    push!(elements["Ω"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["Γᵍ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["Γᵗ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y)
+    push!(elements["Ω"],  :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
+    push!(elements["Γᵍ"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
+    push!(elements["Γᵗ"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y)
+    push!(elements["Ωᵍ"], :𝝭, :∂𝝭∂x, :∂𝝭∂y, :∂𝝭∂z)
+    push!(elements["Ωᵍ"], :𝗠=>𝗠, :∂𝗠∂x=>∂𝗠∂x, :∂𝗠∂y=>∂𝗠∂y, :∂𝗠∂z=>∂𝗠∂z)
+
+    # gmsh.finalize()
+
+    return elements, nodes
+end
+
 function cal_area_support(elms::Vector{ApproxOperator.AbstractElement})
     𝐴s = zeros(length(elms))
     s  = zeros(length(elms))

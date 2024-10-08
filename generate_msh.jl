@@ -1,9 +1,9 @@
 
 import BenchmarkExample: BenchmarkExample
-n = 18
-# BenchmarkExample.PlateWithHole.generateMsh("./msh/PlateWithHole_"*string(n)*".msh", transfinite = n+1)
+n = 23
+# BenchmarkExample.PatchTest.generateMsh("./msh/patchtest_"*string(n)*".msh", transfinite = n+1)
 # BenchmarkExample.PlateWithHole.generateMsh("./msh/PlateWithHole_"*string(n)*".msh", transfinite = (n+1,2*n+1), mode = 2)
-BenchmarkExample.PlateWithHole.generateMsh("./msh/PlateWithHole_"*string(n)*".msh", transfinite = (2*n+1,n+1), coef = 0.96)
+BenchmarkExample.PlateWithHole.generateMsh("./msh/PlateWithHole_"*string(n)*".msh", transfinite = (2*n+1,n+1), coef = 0.97)
 # 2,3,4 0.8
 # 5 0.85
 # 6,7 0.9

@@ -4,7 +4,7 @@ using ApproxOperator.Elasticity: ∫∫εᵢⱼσᵢⱼdxdy, ∫σᵢⱼnⱼgᵢ
 
 include("import_patch_test.jl")
 
-ndiv = 16
+ndiv = 4
 elements, nodes = import_patchtest_gauss("msh/patchtest_"*string(ndiv)*".msh")
 
 nₚ = length(nodes)

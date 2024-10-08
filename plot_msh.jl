@@ -3,9 +3,10 @@ using ApproxOperator, GLMakie
 
 import Gmsh: gmsh
 
-ndiv = 64
+ndiv = 8
 gmsh.initialize()
 gmsh.open("./msh/patchtest_"*string(ndiv)*".msh")
+# gmsh.open("./msh/PlateWithHole_"*string(ndiv)*".msh")
 entities = getPhysicalGroups()
 nodes = get𝑿ᵢ()
 
@@ -16,6 +17,9 @@ elements["Γ²"] = getElements(nodes,entities["Γ²"])
 elements["Γ³"] = getElements(nodes,entities["Γ³"])
 elements["Γ⁴"] = getElements(nodes,entities["Γ⁴"])
 elements["∂Ω"] = elements["Γ¹"]∪elements["Γ²"]∪elements["Γ³"]∪elements["Γ⁴"]
+# elements["Γᵍ"] = getElements(nodes,entities["Γᵍ"])
+# elements["Γᵗ"] = getElements(nodes,entities["Γᵗ"])
+# elements["∂Ω"] = elements["Γᵍ"]∪elements["Γᵗ"]
 
 # gmsh.finalize()
 
@@ -32,17 +36,17 @@ z = 0
 ps = Point3f.(x,y,z)
 scatter!(ps, 
     marker=:circle,
-    markersize = 5,
+    markersize = 20,
     color = :black
 )
 
 # elements
-for elm in elements["Ω"]
-    x = [x.x for x in elm.𝓒[[1,2,3,1]]]
-    y = [x.y for x in elm.𝓒[[1,2,3,1]]]
+# for elm in elements["Ω"]
+#     x = [x.x for x in elm.𝓒[[1,2,3,1]]]
+#     y = [x.y for x in elm.𝓒[[1,2,3,1]]]
 
-    lines!(x,y,linestyle = :dash, linewidth = 0.5, color = :black)
-end
+#     lines!(x,y,linestyle = :dash, linewidth = 0.5, color = :black)
+# end
 
 # # boundaries
 for elm in elements["∂Ω"]
@@ -55,5 +59,6 @@ end
 
 
 save("./png/patchtest_"*string(ndiv)*"_msh.png",f)
+# save("./png/PlateWithHole_"*string(ndiv)*"_msh.png",f)
 
 f

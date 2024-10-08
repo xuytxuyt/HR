@@ -5,8 +5,8 @@ using ApproxOperator.Heat: ∫∫qᵢpᵢdxdy, ∫pᵢnᵢuds, ∫∫∇𝒑udxd
 include("import_patch_test.jl")
 
 # nₚ = 49
-ndivu = 16
-ndiv = 16
+ndivu = 46
+ndiv = 64
 # elements, nodes = import_patchtest_mix("msh/patchtest_u_"*string(nₚ)*".msh","./msh/patchtest_"*string(ndiv)*".msh");
 elements, nodes = import_patchtest_mix("msh/patchtest_"*string(ndiv)*".msh","./msh/patchtest_"*string(ndivu)*".msh");
 # ps = MKLPardisoSolver()
@@ -23,7 +23,7 @@ nₑ = length(elements["Ω"])
     set∇𝝭!(elements["Ωˢ"])
     set𝝭!(elements["∂Ωˢ"])
 end
-n = 1
+n = 5
 # u(x,y) = (x+y)^n
 # ∂u∂x(x,y) = n*(x+y)^abs(n-1)
 # ∂u∂y(x,y) = n*(x+y)^abs(n-1)
@@ -82,13 +82,15 @@ push!(nodes,:d=>𝑢)
 # L₂_𝑢 = L₂(elements["Ωᵍ"])
 𝐻ₑ, 𝐿₂  = H₁(elements["Ωᵍ"])
 
-# XLSX.openxlsx("./xlsx/patchtest.xlsx", mode="rw") do xf
-# index = 64
-#     Sheet = xf[1]
-#     ind = findfirst(n->n==ndivu,index)+1
-#     Sheet["O"*string(ind)] = 3*nₑ
-#     Sheet["P"*string(ind)] = log10(𝐿₂)
-#     Sheet["Q"*string(ind)] = log10(𝐻ₑ)
-# end
+println(log10(𝐿₂))
+println(log10(𝐻ₑ))
+XLSX.openxlsx("./xlsx/heat.xlsx", mode="rw") do xf
+index = 6,7,8,78,12,22,23,1081,55,46
+    Sheet = xf[3]
+    ind = findfirst(n->n==ndivu,index)+1
+    Sheet["A"*string(ind)] = nₑ
+    Sheet["B"*string(ind)] = log10(𝐿₂)
+    Sheet["C"*string(ind)] = log10(𝐻ₑ)
+end
 
 show(to)

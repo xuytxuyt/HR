@@ -118,4 +118,4 @@ d₂ = d[3*nₛ*nₑ+2:2:end]
 push!(nodes,:d₁=>d₁,:d₂=>d₂)
 
 # 𝐿₂ = L₂(elements["Ωᵍ"])
-𝐿₂, 𝐻ₑ = Hₑ_PlaneStress(elements["Ωᵍ"])
+𝐻ₑ,𝐿₂= Hₑ_PlaneStress(elements["Ωᵍ"])
